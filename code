@@ -1,0 +1,106 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.neighbors import KNeighborsRegressor
+
+df = pd.read_csv("2015.csv")
+
+# clean data's missing values 
+df = df.dropna() 
+
+# check the data
+df.describe()
+
+# select relevant features
+X = df[['Economy (GDP per Capita)', 'Family', 'Health (Life Expectancy)', 'Freedom', 'Trust (Government Corruption)']]
+y = df['Happiness Score']
+
+# split data into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=31337)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+mse = mean_squared_error(y_test, y_pred)
+rmse = np.sqrt(mse)
+print("Mean Squared Error: %0.4f" % mse)
+print("Root Mean Squared Error: %0.4f" % rmse)
+
+# R^2
+score_coeff = model.score(X_test, y_test)
+print("Coefficient of Determination:", score_coeff)
+
+# predicted vs actual plot
+plt.scatter(y_pred, y_test, color = 'blue')
+plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color = 'red')
+plt.xlabel("Predicted Happiness Score")
+plt.ylabel("Actual Happiness Score")
+plt.title("Predicted vs Actual Happiness Score")
+plt.show()
+
+# errors
+errors = np.abs(y_test - y_pred)
+
+# 5 largest errors
+top_5_errors_indices = errors.nlargest(5).index
+top_5_samples = df.loc[top_5_errors_indices]
+
+print("Top 5 Samples with High Error:")
+for idx in top_5_errors_indices:
+    country = df.loc[idx, 'Country'] 
+    actual = y_test.loc[idx]
+    predicted = y_pred[y_test.index.get_loc(idx)] 
+    error = errors.loc[idx]
+    print(f"Country: {country}, Actual: {actual}, Predicted: {predicted}, Error Value: {error}")
+
+def categorize_happiness(score):
+    if score < 4.00:
+        return 'Low Happiness'
+    elif score < 7.00:
+        return 'Medium Happiness'
+    else:
+        return 'High Happiness'
+
+# ground-truth labels
+df['Happiness Category'] = df['Happiness Score'].apply(categorize_happiness)
+
+#happiness score plot
+plt.hist(df['Happiness Score'], bins=20, color='blue', alpha=0.7)
+plt.axvline(x=7.0, color='red', linestyle='--', label='Medium to High boundary')
+plt.axvline(x=4.0, color='green', linestyle='--', label='Low to Medium boundary')
+plt.xlabel('Happiness Score')
+plt.ylabel('Frequency')
+plt.title('Happiness Score Distribution')
+plt.legend()
+plt.show()
+
+# predicted happiness based on predictions for the test set
+predicted_categories = [categorize_happiness(score) for score in y_pred]
+
+# for the test set predictions (use the same index as X_test)
+predicted_categories_df = pd.DataFrame(predicted_categories, columns=['Predicted Category'], index=X_test.index)
+df.loc[X_test.index, 'Predicted Category'] = predicted_categories_df['Predicted Category']
+
+# actual categories vs predicted categories
+actual_categories = df.loc[X_test.index, 'Happiness Category']
+predicted_categories = df.loc[X_test.index, 'Predicted Category']
+
+# stripping and cleaning
+actual_categories = actual_categories.str.strip().str.lower()
+predicted_categories = predicted_categories.str.strip().str.lower()
+
+misclassified = actual_categories != predicted_categories
+misclassified_samples = df.loc[X_test.index][misclassified]
+
+num_misclassified = misclassified.sum()
+print(f"Total misclassified samples: {num_misclassified}")
+print("\nMisclassified Samples:")
+print(misclassified_samples[['Country', 'Happiness Category', 'Predicted Category']])
+
+# filter out NaN predictions
+misclassified_samples_no_nan = misclassified_samples[misclassified_samples['Predicted Category'].notna()]
