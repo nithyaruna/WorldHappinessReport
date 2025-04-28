@@ -7,20 +7,17 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.neighbors import KNeighborsRegressor
 
 df = pd.read_csv("2015.csv")
-
-# clean data's missing values 
-df = df.dropna() 
-
-# check the data
+df = df.dropna()
 df.describe()
 
-# select relevant features
+#important features
 X = df[['Economy (GDP per Capita)', 'Family', 'Health (Life Expectancy)', 'Freedom', 'Trust (Government Corruption)']]
 y = df['Happiness Score']
 
-# split data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=31337)
+#split data into trains and tests
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 31337)
 
+#linear regression model
 model = LinearRegression()
 model.fit(X_train, y_train)
 
@@ -31,22 +28,20 @@ rmse = np.sqrt(mse)
 print("Mean Squared Error: %0.4f" % mse)
 print("Root Mean Squared Error: %0.4f" % rmse)
 
-# R^2
 score_coeff = model.score(X_test, y_test)
 print("Coefficient of Determination:", score_coeff)
 
-# predicted vs actual plot
+#predicted vs actual plot
 plt.scatter(y_pred, y_test, color = 'blue')
-plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color = 'red')
+plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], color='red')
 plt.xlabel("Predicted Happiness Score")
 plt.ylabel("Actual Happiness Score")
 plt.title("Predicted vs Actual Happiness Score")
 plt.show()
 
-# errors
 errors = np.abs(y_test - y_pred)
 
-# 5 largest errors
+#5 largest errors
 top_5_errors_indices = errors.nlargest(5).index
 top_5_samples = df.loc[top_5_errors_indices]
 
@@ -61,46 +56,54 @@ for idx in top_5_errors_indices:
 def categorize_happiness(score):
     if score < 4.00:
         return 'Low Happiness'
-    elif score < 7.00:
+    elif score <= 6.00:
         return 'Medium Happiness'
     else:
         return 'High Happiness'
 
-# ground-truth labels
+#the ground-truth labels for happiness categories
 df['Happiness Category'] = df['Happiness Score'].apply(categorize_happiness)
 
-#happiness score plot
+#the score plot with the new intervals
 plt.hist(df['Happiness Score'], bins=20, color='blue', alpha=0.7)
-plt.axvline(x=7.0, color='red', linestyle='--', label='Medium to High boundary')
-plt.axvline(x=4.0, color='green', linestyle='--', label='Low to Medium boundary')
+plt.axvline(x=6.00, color='red', linestyle='-', label='Medium to High boundary')
+plt.axvline(x=4.00, color='purple', linestyle='-', label='Low to Medium boundary')
 plt.xlabel('Happiness Score')
 plt.ylabel('Frequency')
 plt.title('Happiness Score Distribution')
 plt.legend()
 plt.show()
 
-# predicted happiness based on predictions for the test set
+#predicting happiness categories based on the test set predictions
 predicted_categories = [categorize_happiness(score) for score in y_pred]
-
-# for the test set predictions (use the same index as X_test)
 predicted_categories_df = pd.DataFrame(predicted_categories, columns=['Predicted Category'], index=X_test.index)
 df.loc[X_test.index, 'Predicted Category'] = predicted_categories_df['Predicted Category']
 
-# actual categories vs predicted categories
+#actual categories vs predicted categories
 actual_categories = df.loc[X_test.index, 'Happiness Category']
 predicted_categories = df.loc[X_test.index, 'Predicted Category']
 
-# stripping and cleaning
+#cleaning whitespace
 actual_categories = actual_categories.str.strip().str.lower()
 predicted_categories = predicted_categories.str.strip().str.lower()
 
+# Identify misclassified samples
 misclassified = actual_categories != predicted_categories
 misclassified_samples = df.loc[X_test.index][misclassified]
 
+#counts misclassified samples
 num_misclassified = misclassified.sum()
 print(f"Total misclassified samples: {num_misclassified}")
 print("\nMisclassified Samples:")
 print(misclassified_samples[['Country', 'Happiness Category', 'Predicted Category']])
 
-# filter out NaN predictions
-misclassified_samples_no_nan = misclassified_samples[misclassified_samples['Predicted Category'].notna()]
+#bar plot for distribution of predictions by category
+predicted_categories = pd.Series(predicted_categories, index=X_test.index)
+
+category_counts = predicted_categories.value_counts()
+
+plt.bar(category_counts.index, category_counts.values, color=['blue', 'orange', 'green'])
+plt.xlabel('Predicted Happiness Category')
+plt.ylabel('Frequency')
+plt.title('Distribution of Predicted Happiness Categories')
+plt.show()
