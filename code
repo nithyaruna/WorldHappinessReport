@@ -55,6 +55,8 @@ for idx in top_5_errors_indices:
 
 def categorize_happiness(score):
     if score < 4.00:
+        return 'Very Low Happiness'
+    elif score <= 5.00:
         return 'Low Happiness'
     elif score <= 6.00:
         return 'Medium Happiness'
@@ -66,8 +68,9 @@ df['Happiness Category'] = df['Happiness Score'].apply(categorize_happiness)
 
 #the score plot with the new intervals
 plt.hist(df['Happiness Score'], bins=20, color='blue', alpha=0.7)
-plt.axvline(x=6.00, color='red', linestyle='-', label='Medium to High boundary')
-plt.axvline(x=4.00, color='purple', linestyle='-', label='Low to Medium boundary')
+plt.axvline(x=6.00, color = 'red', linestyle='-', label = 'Medium to High boundary')
+plt.axvline(x=5.00, color = 'pink', linestyle='-', label = 'Low to Medium boundary')
+plt.axvline(x=4.00, color = 'purple', linestyle='-', label = 'Very Low to Low boundary')
 plt.xlabel('Happiness Score')
 plt.ylabel('Frequency')
 plt.title('Happiness Score Distribution')
@@ -76,7 +79,7 @@ plt.show()
 
 #predicting happiness categories based on the test set predictions
 predicted_categories = [categorize_happiness(score) for score in y_pred]
-predicted_categories_df = pd.DataFrame(predicted_categories, columns=['Predicted Category'], index=X_test.index)
+predicted_categories_df = pd.DataFrame(predicted_categories, columns=['Predicted Category'], index = X_test.index)
 df.loc[X_test.index, 'Predicted Category'] = predicted_categories_df['Predicted Category']
 
 #actual categories vs predicted categories
@@ -87,15 +90,15 @@ predicted_categories = df.loc[X_test.index, 'Predicted Category']
 actual_categories = actual_categories.str.strip().str.lower()
 predicted_categories = predicted_categories.str.strip().str.lower()
 
-# Identify misclassified samples
+#misclassified samples
 misclassified = actual_categories != predicted_categories
 misclassified_samples = df.loc[X_test.index][misclassified]
 
 #counts misclassified samples
 num_misclassified = misclassified.sum()
 print(f"Total misclassified samples: {num_misclassified}")
-print("\nMisclassified Samples:")
-print(misclassified_samples[['Country', 'Happiness Category', 'Predicted Category']])
+print("\nFirst 5 Misclassified Samples:")
+print(misclassified_samples[['Country', 'Happiness Category', 'Predicted Category']].head(5))
 
 #bar plot for distribution of predictions by category
 predicted_categories = pd.Series(predicted_categories, index=X_test.index)
