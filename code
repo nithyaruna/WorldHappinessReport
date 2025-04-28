@@ -14,6 +14,24 @@ df.describe()
 X = df[['Economy (GDP per Capita)', 'Family', 'Health (Life Expectancy)', 'Freedom', 'Trust (Government Corruption)']]
 y = df['Happiness Score']
 
+#checking duplicates
+print("\nNumber of Duplicate Rows:")
+print(df.duplicated().sum())
+
+#data types
+print("\nData Types of variables:")
+print(df.dtypes)
+
+#summary statistics
+print("\nSummary Statistics:")
+print(df.describe())
+
+#checking for negative values
+print("\nAbnormal values:")
+print(df[(df['Economy (GDP per Capita)'] < 0) | 
+         (df['Health (Life Expectancy)'] < 0) | 
+         (df['Freedom'] < 0)].head())
+
 #split data into trains and tests
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state = 31337)
 
